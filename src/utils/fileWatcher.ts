@@ -5,8 +5,10 @@ import debounce from 'lodash.debounce';
 import { config } from '../config/config';
 import { performOCR } from '../service/ocrService';
 import { processQuestion } from '../service/questionService';
+import clipboardy from 'clipboardy';
 
 let latestScreenshotTime = 0;
+let lastClipboardText = '';
 
 const handleNewScreenshot = debounce(async (filePath: string): Promise<void> => {
     try {
@@ -18,6 +20,18 @@ const handleNewScreenshot = debounce(async (filePath: string): Promise<void> => 
         }
     } catch (error) {
         console.error('Error processing screenshot:', error);
+    }
+}, 1000);
+
+const handleClipboardTextChange = debounce(async (): Promise<void> => {
+    try {
+        const clipboardText = await clipboardy.read();
+        if (clipboardText && clipboardText !== lastClipboardText) {
+            lastClipboardText = clipboardText;
+            await processQuestion(clipboardText);
+        }
+    } catch (error) {
+        console.error('Error processing clipboard text:', error);
     }
 }, 1000);
 
@@ -46,4 +60,6 @@ export async function watchScreenshots(): Promise<void> {
     watcher.on('error', error => {
         console.error('Error in file watcher:', error);
     });
+
+    setInterval(handleClipboardTextChange, 1000);
 }
