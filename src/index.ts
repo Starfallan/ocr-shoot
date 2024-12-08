@@ -4,6 +4,7 @@ import { config } from './config/config';
 import { initializeWorker } from './service/ocrService';
 import { watchScreenshots } from './utils/fileWatcher';
 import apiRoutes from './routes/api';
+import { watchClipboard } from './utils/clipboardWatcher';
 
 const app = express();
 
@@ -13,7 +14,11 @@ app.use('/api', apiRoutes);
 async function main(): Promise<void> {
     try {
         await initializeWorker();
-        await watchScreenshots();
+        if (process.platform === 'win32') {
+            await watchClipboard();
+        } else {
+            await watchScreenshots();
+        }
 
         app.listen(config.PORT, () => {
             console.log(`Server is running on http://localhost:${config.PORT}`);
